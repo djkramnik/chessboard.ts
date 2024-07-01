@@ -21,6 +21,8 @@
         getAsset: (type) => {
           return `assets/${typeToFileName(type)}`
         },
+        player: 0,
+        flipped: false,
       })
       function typeToFileName(s) {
         const black = ['p', 'n', 'b', 'r', 'q', 'k']

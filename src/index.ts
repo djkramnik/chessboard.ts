@@ -1,10 +1,51 @@
 const chessts = (function chessTs() {
+  /**
+   * DANGER GLOBAL STATE.  DANGER
+   */
+
+  // stuff in here involves direct manipulation the dom of the chessboard, or the global state, in an EFFICIENT way
+  // a react component can interact with these via a pubsub system
+
+  type UiState = {
+    pieces: HTMLElement[]
+    flipped: boolean
+    boardEl: HTMLElement
+  }
+  let globalState: UiState = {
+    pieces: [],
+    flipped: false,
+    boardEl: document.createElement('div')
+  }
+
+  function movePiece(from: Square, to: Square) {
+    const target = globalState.pieces.find(el => el.getAttribute('data-square') === from)
+    if (!target) {
+      console.warn('Cannot find piece on', from)
+      return
+    }
+    const maybeCapture = globalState.pieces.find(el => el.getAttribute('data-square') === to)
+    maybeCapture?.remove() // goodbye jack
+
+    const { top, left } = squareToPos(to)
+    target.style.top = top
+    target.style.left = left
+    target.setAttribute('data-square', to)
+  }
+
+  function restorePiece(square: Square, type: Piece) {
+
+  }
+
+  /** DANGER.  REACT SUX.  DANGER */
+
   function initChessboard({
     el,
     background,
     state,
     getAsset,
     flipped,
+    player,
+    onMove = movePiece,
   }: {
     el: HTMLElement
     background: string
@@ -12,19 +53,26 @@ const chessts = (function chessTs() {
     position: Record<Square, Piece>
     flipped?: boolean
     getAsset: (type: Piece) => string
+    player: Player | null,
+    onMove?: (f: Square, t: Square) => void 
   }) {
+    globalState.boardEl = el
     el.style.background = `url(${background})`
     el.style.position = 'relative'
     const pieces = Object.entries(state.position)
     for(const [square, piece] of pieces) {
-      el.appendChild(
-        initPiece({
-          type: piece,
-          square: square as Square,
-          flipped,
-          getAsset,
-        })
-      )
+      const pieceUi = initPiece({
+        type: piece,
+        square: square as Square,
+        flipped,
+        getAsset,
+        disabled: player !== null
+          ? toPlayer(piece) !== player
+          : false,
+        onMove,
+      })
+      globalState.pieces.push(pieceUi)
+      el.appendChild(pieceUi)
     }
   }
 
@@ -66,6 +114,13 @@ const chessts = (function chessTs() {
       [square]: index,
     }
   }, {} as Record<Square, number>)
+
+  const toPlayer = (p: Piece) => {
+    if (/^[pnbrkq]$/.test(p)) {
+      return 1
+    }
+    return 0
+  }
 
   const files = ["a", "b", "c", "d", "e", "f", "g", "h"]
 
@@ -206,6 +261,7 @@ const chessts = (function chessTs() {
     disabled?: boolean
     bgc?: string
     getAsset: (type: Piece) => string
+    onMove?: (f: Square, t: Square) => void // might have to move this to global so outside can effect it more easily
   };
 
   function initPiece({
@@ -215,6 +271,7 @@ const chessts = (function chessTs() {
     flipped,
     disabled,
     getAsset,
+    onMove,
   }: PieceProps) {
     const containerUi = createDom('div', {
       position: 'absolute',
@@ -222,14 +279,70 @@ const chessts = (function chessTs() {
       height: '12.5%',
       backgroundColor: bgc,
       ...squareToPos(square, flipped),
-    }, { draggable: false, id: `${square}_${type}` })
+    }, { 
+      draggable: false,
+      'data-disabled': disabled,
+      'data-square': square
+    })
     const imgUi = createDom('img', {
       width: '100%',
       cursor: disabled ? 'auto': 'pointer',
     }, { draggable: false, src: getAsset(type)})
     containerUi.appendChild(imgUi)
-    
+    containerUi.addEventListener('mousedown', function handleMouseDown() {
+      if (containerUi.getAttribute('data-disabled') === 'true') {
+        return
+      }
+      createDraggablePiece(containerUi as HTMLDivElement, onMove)
+    })
     return containerUi
+  }
+
+  function createDraggablePiece(el: HTMLDivElement, onMove?: (f: Square, t: Square) => void) {
+    if (document.getElementById('draggablePiece') !== null) {
+      return
+    }
+    const { top, left, width, height } = el.getBoundingClientRect()
+    const draggablePiece = el.cloneNode(true /** clone children */) as HTMLDivElement
+    draggablePiece.setAttribute('id', 'draggablePiece')
+    draggablePiece.style.backgroundColor = 'transparent'
+    draggablePiece.style.width = width + 'px'
+    draggablePiece.style.height = height + 'px'
+    draggablePiece.style.top = (top + 5) + 'px'
+    draggablePiece.style.left = left + 'px'
+    draggablePiece.style.pointerEvents = 'none'
+    document.body.appendChild(draggablePiece)
+    el.style.opacity = '0.5'
+    // create a window event handler for mouse move
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', function handleMouseUp(e: MouseEvent) {
+      const draggablePiece = document.getElementById('draggablePiece')
+
+      if (draggablePiece) {
+        draggablePiece.remove()
+      }
+      if (onMove) {
+        const { width, x, y } = globalState.boardEl.getBoundingClientRect()
+        const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.pageY - y })
+        const fromSquare = el.getAttribute('data-square')
+        console.log('why god', x, y, e.clientX - x, e.clientY - y)
+        if (fromSquare && toSquare) {
+          onMove(fromSquare as Square, toSquare)
+        }
+      }
+      el.style.opacity = 'initial'
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    })
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    const draggablePiece = document.getElementById('draggablePiece')
+    if (!draggablePiece) {
+      return
+    }
+    draggablePiece.style.top = (e.pageY - (draggablePiece.clientHeight / 2)) + 'px'
+    draggablePiece.style.left = (e.pageX - (draggablePiece.clientWidth / 2)) + 'px' 
   }
 
   return {
