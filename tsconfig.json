@@ -6,6 +6,8 @@
       "dom.iterable",
       "esnext"
     ],
+    "outDir": "dist",
+    "rootDir": "src",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -20,7 +22,7 @@
     "incremental": true,
   },
   "include": [
-    "**/*.ts",
+    "src/**/*.ts",
   ],
   "exclude": [
     "node_modules"

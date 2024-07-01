@@ -13,7 +13,10 @@
     </div>
     <script type="text/javascript" src="dist/index.js"></script>
     <script type="text/javascript">
-      window.initChessboard(document.getElementById('chessboard'))
+      chessts.initChessboard({
+        el: document.getElementById('chessboard'),
+        background: 'brown.svg'
+      })
     </script>
   </body>
 </html>
