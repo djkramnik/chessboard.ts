@@ -4,17 +4,22 @@ const chessts = (function chessTs() {
    */
 
   // stuff in here involves direct manipulation the dom of the chessboard, or the global state, in an EFFICIENT way
-  // a react component can interact with these via a pubsub system
 
   type UiState = {
     pieces: HTMLElement[]
     flipped: boolean
     boardEl: HTMLElement
+    player: Player | null
+    getAsset: ((p: Piece) => string) | null
+    onMove: ((f: Square, t: Square) => void) | null
   }
   let globalState: UiState = {
     pieces: [],
     flipped: false,
-    boardEl: document.createElement('div')
+    boardEl: document.createElement('div'),
+    player: 0,
+    getAsset: null,
+    onMove: null
   }
 
   let animateQueue: Promise<void> = Promise.resolve() // orders to animate something on the board get attached to this promise
@@ -38,6 +43,7 @@ const chessts = (function chessTs() {
         })
       })
     })
+    return animateQueue
   }
 
   function movePiece(from: Square, to: Square) {
@@ -57,13 +63,61 @@ const chessts = (function chessTs() {
     target.style.left = left
     target.setAttribute('data-square', to)
     if (maybeCapture) {
+      // shit blows up without this splice and idkw
       globalState.pieces.splice(globalState.pieces.findIndex(el => el === maybeCapture), 1)
       maybeCapture.remove() // goodbye jack
     }
   }
 
-  function restorePiece(square: Square, type: Piece) {
+  function placePiece({
+    piece,
+    square,
+    player,
+  }: {
+    piece: Piece
+    square: Square
+    player: Player | null
+  }) {
+    const pieceUi = initPiece({
+      type: piece,
+      square: square as Square,
+      flipped: globalState.flipped,
+      getAsset: globalState.getAsset!,
+      disabled: player !== null
+        ? toPlayer(piece) !== player
+        : false,
+      onMove: globalState.onMove!,
+    })
+    globalState.pieces.push(pieceUi)
+    globalState.boardEl.appendChild(pieceUi)
+  }
 
+  function freeze(player: Player | null) {
+    for(const piece of globalState.pieces) {
+      if (player === null) {
+        piece.setAttribute('data-disabled', 'true')
+        return
+      }
+      const pieceColor = toPlayer(piece.getAttribute('data-square')! as Piece)
+      if (player === pieceColor) {
+        piece.setAttribute('data-disabled', 'true')
+      }
+      piece.setAttribute('data-disabled', '')
+    }
+  }
+
+  function unfreeze(player: Player | null) {
+    for(const piece of globalState.pieces) {
+      if (player === null) {
+        piece.setAttribute('data-disabled', '')
+        return
+      }
+      const pieceColor = toPlayer(piece.getAttribute('data-square')! as Piece)
+      if (player === pieceColor) {
+        piece.setAttribute('data-disabled', '')
+      }
+      piece.setAttribute('data-disabled', 'true')
+    }
   }
 
   /** DANGER.  REACT SUX.  DANGER */
@@ -86,8 +140,12 @@ const chessts = (function chessTs() {
     player: Player | null,
     onMove?: (f: Square, t: Square) => void 
   }) {
+
     globalState.boardEl = el
     globalState.flipped = flipped === true
+    globalState.getAsset = getAsset
+    globalState.onMove = onMove
+    
     el.style.background = `url(${background})`
     el.style.position = 'relative'
     const pieces = Object.entries(state.position)
@@ -295,7 +353,7 @@ const chessts = (function chessTs() {
     disabled?: boolean
     bgc?: string
     getAsset: (type: Piece) => string
-    onMove?: (f: Square, t: Square) => void // might have to move this to global so outside can effect it more easily
+    onMove?: (f: Square, t: Square) => void
   };
 
   function initPiece({
@@ -385,5 +443,9 @@ const chessts = (function chessTs() {
     startingFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
     animatePiece,
     movePiece,
+    placePiece,
+    freeze,
+    unfreeze,
+    state: globalState,
   };
 })();
