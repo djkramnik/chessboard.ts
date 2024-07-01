@@ -31,7 +31,7 @@ const chessts = (function chessTs() {
           return
         }
         target.style.transition = '240ms transform'
-        const [translateX, translateY] = translateSquares(from, to)
+        const [translateX, translateY] = translateSquares(from, to, globalState.flipped)
         target.style.transform = `translate(${translateX}%,${translateY}%)`
         target.addEventListener('transitionend', () => {
           target.style.transition = 'initial'
@@ -54,7 +54,7 @@ const chessts = (function chessTs() {
     }
     const maybeCapture = globalState.pieces.find(el => el.getAttribute('data-square') === to)
 
-    const { top, left } = squareToPos(to)
+    const { top, left } = squareToPos(to, globalState.flipped)
 
     target.style.top = top
     target.style.left = left
@@ -90,6 +90,7 @@ const chessts = (function chessTs() {
     onMove?: (f: Square, t: Square) => void 
   }) {
     globalState.boardEl = el
+    globalState.flipped = flipped === true
     el.style.background = `url(${background})`
     el.style.position = 'relative'
     const pieces = Object.entries(state.position)
@@ -363,7 +364,7 @@ const chessts = (function chessTs() {
       }
       if (onMove) {
         const { width, x, y } = globalState.boardEl.getBoundingClientRect()
-        const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.pageY - y })
+        const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.pageY - y, flipped: globalState.flipped})
         const fromSquare = el.getAttribute('data-square')
         if (fromSquare && toSquare) {
           onMove(fromSquare as Square, toSquare)
