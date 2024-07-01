@@ -17,6 +17,9 @@ const chessts = (function chessTs() {
     boardEl: document.createElement('div')
   }
 
+  // @ts-ignore
+  window.foobar = globalState
+
   let animateQueue: Promise<void> = Promise.resolve() // orders to animate something on the board get attached to this promise
 
   function animatePiece(from: Square, to: Square) {
@@ -41,18 +44,25 @@ const chessts = (function chessTs() {
   }
 
   function movePiece(from: Square, to: Square) {
+    if (from === to) {
+      return
+    }
     const target = globalState.pieces.find(el => el.getAttribute('data-square') === from)
     if (!target) {
       console.warn('Cannot find piece on', from)
       return
     }
     const maybeCapture = globalState.pieces.find(el => el.getAttribute('data-square') === to)
-    maybeCapture?.remove() // goodbye jack
 
     const { top, left } = squareToPos(to)
+
     target.style.top = top
     target.style.left = left
     target.setAttribute('data-square', to)
+    if (maybeCapture) {
+      globalState.pieces.splice(globalState.pieces.findIndex(el => el === maybeCapture), 1)
+      maybeCapture.remove() // goodbye jack
+    }
   }
 
   function restorePiece(square: Square, type: Piece) {
@@ -333,6 +343,7 @@ const chessts = (function chessTs() {
     }
     const { top, left, width, height } = el.getBoundingClientRect()
     const draggablePiece = el.cloneNode(true /** clone children */) as HTMLDivElement
+    draggablePiece.setAttribute('data-square', '')
     draggablePiece.setAttribute('id', 'draggablePiece')
     draggablePiece.style.backgroundColor = 'transparent'
     draggablePiece.style.width = width + 'px'
@@ -369,8 +380,8 @@ const chessts = (function chessTs() {
     if (!draggablePiece) {
       return
     }
-    draggablePiece.style.top = (e.pageY - (draggablePiece.clientHeight / 2)) + 'px'
-    draggablePiece.style.left = (e.pageX - (draggablePiece.clientWidth / 2)) + 'px' 
+    draggablePiece.style.top = (e.clientY - (draggablePiece.clientHeight / 2)) + 'px'
+    draggablePiece.style.left = (e.clientX - (draggablePiece.clientWidth / 2)) + 'px' 
   }
 
   return {
