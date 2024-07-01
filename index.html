@@ -13,7 +13,7 @@
     </div>
     <script type="text/javascript" src="dist/index.js"></script>
     <script type="text/javascript">
-      const { initChessboard, fenToState, startingFen } = chessts
+      const { initChessboard, fenToState, startingFen, animatePiece } = chessts
       initChessboard({
         el: document.getElementById('chessboard'),
         background: 'assets/brown.svg',
@@ -28,6 +28,11 @@
         const black = ['p', 'n', 'b', 'r', 'q', 'k']
         return `${black.includes(s) ? 'b' : 'w'}${s.toLowerCase()}.png`
       }
+      setTimeout(() => {
+        animatePiece('e2', 'e4')
+        animatePiece('e7', 'e5')
+        animatePiece('g1', 'f3')
+      }, 2000)
     </script>
   </body>
 </html>

@@ -17,6 +17,29 @@ const chessts = (function chessTs() {
     boardEl: document.createElement('div')
   }
 
+  let animateQueue: Promise<void> = Promise.resolve() // orders to animate something on the board get attached to this promise
+
+  function animatePiece(from: Square, to: Square) {
+    animateQueue = animateQueue.then(() => {
+      return new Promise(resolve => {
+        const target = globalState.pieces.find(el => el.getAttribute('data-square') === from)
+        if (!target) {
+          console.warn('Cannot find piece on', from)
+          return
+        }
+        target.style.transition = '240ms transform'
+        const [translateX, translateY] = translateSquares(from, to)
+        target.style.transform = `translate(${translateX}%,${translateY}%)`
+        target.addEventListener('transitionend', () => {
+          target.style.transition = 'initial'
+          target.style.transform = 'initial'
+          movePiece(from, to)
+          resolve()
+        })
+      })
+    })
+  }
+
   function movePiece(from: Square, to: Square) {
     const target = globalState.pieces.find(el => el.getAttribute('data-square') === from)
     if (!target) {
@@ -115,6 +138,8 @@ const chessts = (function chessTs() {
     }
   }, {} as Record<Square, number>)
 
+  const files = ["a", "b", "c", "d", "e", "f", "g", "h"]
+
   const toPlayer = (p: Piece) => {
     if (/^[pnbrkq]$/.test(p)) {
       return 1
@@ -122,7 +147,11 @@ const chessts = (function chessTs() {
     return 0
   }
 
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"]
+  function translateSquares(from: Square, to: Square, flipped?: boolean) {
+    const translateX = (files.indexOf(to[0]) - files.indexOf(from[0])) * 100 * (flipped ? -1 : 1)
+    const translateY = (Number(to[1]) - Number(from[1])) * 100 * (flipped ? 1 : -1)
+    return [translateX, translateY]
+  }
 
   const expandEmptySquares = (n: number): string => {
     return Array(n).fill('0').join('')
@@ -325,7 +354,6 @@ const chessts = (function chessTs() {
         const { width, x, y } = globalState.boardEl.getBoundingClientRect()
         const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.pageY - y })
         const fromSquare = el.getAttribute('data-square')
-        console.log('why god', x, y, e.clientX - x, e.clientY - y)
         if (fromSquare && toSquare) {
           onMove(fromSquare as Square, toSquare)
         }
@@ -348,6 +376,8 @@ const chessts = (function chessTs() {
   return {
     initChessboard,
     fenToState,
-    startingFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    startingFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    animatePiece,
+    movePiece,
   };
 })();
