@@ -15,11 +15,18 @@
     <script type="text/javascript">
       chessts.initChessboard({
         el: document.getElementById('chessboard'),
-        background: 'brown.svg',
+        background: 'assets/brown.svg',
         position: {
           'e2': 'P'
+        },
+        getAsset: (type) => {
+          return `assets/${typeToFileName(type)}`
         }
       })
+      function typeToFileName(s) {
+        const black = ['p', 'n', 'b', 'r', 'q', 'k']
+        return `${black.includes(s) ? 'b' : 'w'}${s.toLowerCase()}.png`
+      }
     </script>
   </body>
 </html>

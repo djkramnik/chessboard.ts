@@ -4,13 +4,16 @@ const chessts = (function chessTs() {
     background,
     position,
     flipped,
+    getAsset,
   }: {
     el: HTMLElement;
     background: string;
     position: Record<Square, Piece>
     flipped?: boolean
+    getAsset: (type: Piece) => string
   }) {
-    el.style.background = `url(${background})`;
+    el.style.background = `url(${background})`
+    el.style.position = 'relative'
     const pieces = Object.entries(position)
     for(const [square, piece] of pieces) {
       el.appendChild(
@@ -18,6 +21,7 @@ const chessts = (function chessTs() {
           type: piece,
           square: square as Square,
           flipped,
+          getAsset,
         })
       )
     }
@@ -111,6 +115,7 @@ const chessts = (function chessTs() {
     flipped?: boolean
     disabled?: boolean
     bgc?: string
+    getAsset: (type: Piece) => string
   };
 
   function initPiece({
@@ -119,6 +124,7 @@ const chessts = (function chessTs() {
     bgc = 'transparent',
     flipped,
     disabled,
+    getAsset,
   }: PieceProps) {
     const containerUi = createDom('div', {
       position: 'absolute',
@@ -130,7 +136,7 @@ const chessts = (function chessTs() {
     const imgUi = createDom('img', {
       width: '100%',
       cursor: disabled ? 'auto': 'pointer',
-    }, { draggable: false })
+    }, { draggable: false, src: getAsset(type)})
     containerUi.appendChild(imgUi)
     
     return containerUi
