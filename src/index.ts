@@ -17,9 +17,6 @@ const chessts = (function chessTs() {
     boardEl: document.createElement('div')
   }
 
-  // @ts-ignore
-  window.foobar = globalState
-
   let animateQueue: Promise<void> = Promise.resolve() // orders to animate something on the board get attached to this promise
 
   function animatePiece(from: Square, to: Square) {
@@ -137,9 +134,6 @@ const chessts = (function chessTs() {
     'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
     'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1',
   ]
-  
-  const squaresArrFlipped: Square[]
-    = squaresArr.slice(0).reverse()
   
   // fen order
   const squares = squaresArr.reduce((acc, square, index) => {
