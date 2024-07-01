@@ -13,15 +13,14 @@
     </div>
     <script type="text/javascript" src="dist/index.js"></script>
     <script type="text/javascript">
-      chessts.initChessboard({
+      const { initChessboard, fenToState, startingFen } = chessts
+      initChessboard({
         el: document.getElementById('chessboard'),
         background: 'assets/brown.svg',
-        position: {
-          'e2': 'P'
-        },
+        state: fenToState(startingFen),
         getAsset: (type) => {
           return `assets/${typeToFileName(type)}`
-        }
+        },
       })
       function typeToFileName(s) {
         const black = ['p', 'n', 'b', 'r', 'q', 'k']
