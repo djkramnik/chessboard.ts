@@ -431,8 +431,8 @@ const chessts = (function chessTs() {
     if (!draggablePiece) {
       return
     }
-    draggablePiece.style.top = (e.clientY - (draggablePiece.clientHeight / 2)) + 'px'
-    draggablePiece.style.left = (e.clientX - (draggablePiece.clientWidth / 2)) + 'px' 
+    draggablePiece.style.top = (e.pageY - (draggablePiece.clientHeight / 2)) + 'px'
+    draggablePiece.style.left = (e.pageX - (draggablePiece.clientWidth / 2)) + 'px' 
   }
 
   return {
