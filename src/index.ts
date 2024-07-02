@@ -134,7 +134,6 @@ const chessts = (function chessTs() {
     el: HTMLElement
     background: string
     state: GameState
-    position: Record<Square, Piece>
     flipped?: boolean
     getAsset: (type: Piece) => string
     player: Player | null,
@@ -381,16 +380,16 @@ const chessts = (function chessTs() {
       cursor: disabled ? 'auto': 'pointer',
     }, { draggable: false, src: getAsset(type)})
     containerUi.appendChild(imgUi)
-    containerUi.addEventListener('mousedown', function handleMouseDown() {
+    containerUi.addEventListener('mousedown', function handleMouseDown(e) {
       if (containerUi.getAttribute('data-disabled') === 'true') {
         return
       }
-      createDraggablePiece(containerUi as HTMLDivElement, onMove)
+      createDraggablePiece(e as MouseEvent, containerUi as HTMLDivElement, onMove)
     })
     return containerUi
   }
 
-  function createDraggablePiece(el: HTMLDivElement, onMove?: (f: Square, t: Square) => void) {
+  function createDraggablePiece(e: MouseEvent, el: HTMLDivElement, onMove?: (f: Square, t: Square) => void) {
     if (document.getElementById('draggablePiece') !== null) {
       return
     }
@@ -401,10 +400,9 @@ const chessts = (function chessTs() {
     draggablePiece.style.backgroundColor = 'transparent'
     draggablePiece.style.width = width + 'px'
     draggablePiece.style.height = height + 'px'
-    draggablePiece.style.top = (top + 5) + 'px'
-    draggablePiece.style.left = left + 'px'
     draggablePiece.style.pointerEvents = 'none'
     document.body.appendChild(draggablePiece)
+    handleMouseMove(e)
     el.style.opacity = '0.5'
     // create a window event handler for mouse move
     window.addEventListener('mousemove', handleMouseMove)
@@ -416,7 +414,7 @@ const chessts = (function chessTs() {
       }
       if (onMove) {
         const { width, x, y } = globalState.boardEl.getBoundingClientRect()
-        const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.pageY - y, flipped: globalState.flipped})
+        const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.clientY - y, flipped: globalState.flipped})
         const fromSquare = el.getAttribute('data-square')
         if (fromSquare && toSquare) {
           onMove(fromSquare as Square, toSquare)
