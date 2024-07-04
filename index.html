@@ -9,13 +9,19 @@
     </style>
   </head>
   <body>
-    <nav style="height: 70px"></nav>
-    <div style="height: 300px"></div>
     <div id="chessboard">
     </div>
     <script type="text/javascript" src="dist/index.js"></script>
     <script type="text/javascript">
-      const { initChessboard, fenToState, startingFen, animatePiece } = chessts
+      const blueSquare = document.createElement('div')
+      blueSquare.style.position = 'absolute'
+      blueSquare.style.top = 0
+      blueSquare.style.left = 0
+      blueSquare.style.width = '100%'
+      blueSquare.style.height = '100%'
+      blueSquare.style.backgroundColor = 'blue'
+
+      const { initChessboard, fenToState, startingFen, animatePiece, decorate } = chessts
       initChessboard({
         el: document.getElementById('chessboard'),
         background: 'assets/brown.svg',
@@ -25,6 +31,13 @@
         },
         player: 0,
         flipped: false,
+        onHover: (s) => {
+          console.log('hover', s)
+        },
+        onDrag: {
+          start: (s) => console.log('drag start', s),
+          end: (s) => console.log('drag end', s)
+        }
       })
       function typeToFileName(s) {
         const black = ['p', 'n', 'b', 'r', 'q', 'k']
@@ -36,6 +49,7 @@
         animatePiece('g1', 'f3')
         animatePiece('b8', 'c6')
       }, 2000)
+      decorate('e4', blueSquare)
     </script>
   </body>
 </html>

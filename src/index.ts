@@ -1,3 +1,5 @@
+// consider debounce?
+
 const chessts = (function chessTs() {
   /**
    * DANGER GLOBAL STATE.  DANGER
@@ -13,7 +15,11 @@ const chessts = (function chessTs() {
     moving: boolean // make this a piece? 
     getAsset: ((p: Piece) => string) | null
     onMove: ((f: Square, t: Square) => void) | null
-    onHover: ((e: MouseEvent) => void) | null
+    onHover: ((s: Square) => void) | null
+    onDrag: {
+      start: (s: Square) => void
+      end: () => void
+    } | null
   }
   
   let globalState: UiState = {
@@ -25,6 +31,7 @@ const chessts = (function chessTs() {
     getAsset: null,
     onMove: null,
     onHover: null,
+    onDrag: null,
   }
 
   let animateQueue: Promise<void> = Promise.resolve() // orders to animate something on the board get attached to this promise
@@ -32,7 +39,7 @@ const chessts = (function chessTs() {
   function animatePiece(from: Square, to: Square) {
     animateQueue = animateQueue.then(() => {
       return new Promise(resolve => {
-        const target = globalState.pieces.find(el => el.getAttribute('data-square') === from)
+        const target = findPiece(from)
         if (!target) {
           console.warn('Cannot find piece on', from)
           return
@@ -55,12 +62,12 @@ const chessts = (function chessTs() {
     if (from === to) {
       return
     }
-    const target = globalState.pieces.find(el => el.getAttribute('data-square') === from)
+    const target = findPiece(from)
     if (!target) {
       console.warn('Cannot find piece on', from)
       return
     }
-    const maybeCapture = globalState.pieces.find(el => el.getAttribute('data-square') === to)
+    const maybeCapture = findPiece(to)
 
     const { top, left } = squareToPos(to, globalState.flipped)
 
@@ -125,16 +132,24 @@ const chessts = (function chessTs() {
     }
   }
 
-  function decorateSquare(s: Square, fn: () => HTMLElement) {
-    // on each square have some overlay thing
-    // find el corresponding to the square, append the child returned by fn
-    const el = findPiece(s)
-    if (!el) {
-      return null
+  function decorate(s: Square, decoration: HTMLElement) {
+    if (document.getElementById('data-decoration_' + s)) {
+      return
     }
-    const decoration = fn()
-    el.appendChild(decoration)
-    return decoration
+    // square to position... put on board... 
+    const decorationParent = createDom('div', {
+      position: 'absolute',
+      width: '12.5%',
+      height: '12.5%',
+      ...(squareToPos(s, globalState.flipped))
+    }, {
+      'id': 'data-decoration_' + s
+    })
+    decorationParent.appendChild(decoration)
+    globalState.boardEl.appendChild(decorationParent)
+  }
+  function removeDecoration(s: Square) {
+    document.getElementById('data-decoration_' + s)?.remove()
   }
 
   function findPiece(s: Square) {
@@ -151,6 +166,7 @@ const chessts = (function chessTs() {
     flipped,
     onMove = movePiece,
     onHover,
+    onDrag,
   }: {
     el: HTMLElement
     background: string
@@ -158,7 +174,8 @@ const chessts = (function chessTs() {
     flipped?: boolean
     getAsset: (type: Piece) => string
     onMove?: (f: Square, t: Square) => void 
-    onHover?: (e: MouseEvent) => void
+    onHover?: (s: Square) => void
+    onDrag?: { start: (s: Square) => void, end: (s: Square) => void }
   }) {
 
     globalState.boardEl = el
@@ -169,12 +186,7 @@ const chessts = (function chessTs() {
     
     el.style.background = `url(${background})`
     el.style.position = 'relative'
-    el.addEventListener('mouseover', (e) => {
-      if (!globalState.moving) {
-        return
-      }
-      globalState.onHover?.(e)
-    })
+
     const pieces = Object.entries(state.position)
     for(const [square, piece] of pieces) {
       const pieceUi = initPiece({
@@ -186,6 +198,7 @@ const chessts = (function chessTs() {
           ? toPlayer(piece) !== state.player
           : false,
         onMove,
+        onDrag,
       })
       globalState.pieces.push(pieceUi)
       el.appendChild(pieceUi)
@@ -210,9 +223,6 @@ const chessts = (function chessTs() {
     fen: string;
   }
 
-  const chessColors = {
-    selected: 'rgba(155,199,0,.41)'
-  }
   const squaresArr: Square[] = [
     'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
     'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
@@ -382,25 +392,28 @@ const chessts = (function chessTs() {
     square: Square;
     flipped?: boolean
     disabled?: boolean
-    bgc?: string
     getAsset: (type: Piece) => string
     onMove?: (f: Square, t: Square) => void
+    onDrag?: {
+      start: (s: Square) => void,
+      end: (s: Square) => void,
+    }
   };
 
   function initPiece({
     type,
     square,
-    bgc = 'transparent',
     flipped,
     disabled,
     getAsset,
     onMove,
+    onDrag,
   }: PieceProps) {
     const containerUi = createDom('div', {
       position: 'absolute',
       width: '12.5%',
       height: '12.5%',
-      backgroundColor: bgc,
+      zIndex: '1',
       ...squareToPos(square, flipped),
     }, { 
       draggable: false,
@@ -411,32 +424,24 @@ const chessts = (function chessTs() {
       width: '100%',
       cursor: disabled ? 'auto': 'pointer',
     }, { draggable: false, src: getAsset(type)})
-    const overlayUi = createDom('div', {
-      position: 'absolute',
-      top: '0',
-      left: '0',
-      width: '100%',
-      height: '100%',
-      zIndex: '-1',
-      display: 'flex', // for easy centering
-      justifyContent: 'center',
-      alignItems: 'center'
-    }, {
-      'data-overlay': 'true'
-    })
-    containerUi.appendChild(overlayUi)
     containerUi.appendChild(imgUi)
     containerUi.addEventListener('mousedown', function handleMouseDown(e) {
       if (containerUi.getAttribute('data-disabled') === 'true') {
         return
       }
       globalState.moving = true
-      createDraggablePiece(e as MouseEvent, containerUi as HTMLDivElement, onMove)
+      createDraggablePiece(e as MouseEvent, containerUi as HTMLDivElement, onMove, onDrag?.end)
+      onDrag?.start(containerUi.getAttribute('data-square') as Square)
     })
     return containerUi
   }
 
-  function createDraggablePiece(e: MouseEvent, el: HTMLDivElement, onMove?: (f: Square, t: Square) => void) {
+  function createDraggablePiece(
+    e: MouseEvent,
+    el: HTMLDivElement,
+    onMove?: (f: Square, t: Square) => void,
+    onDragEnd?: (s: Square) => void,
+  ) {
     if (document.getElementById('draggablePiece') !== null) {
       return
     }
@@ -444,7 +449,6 @@ const chessts = (function chessTs() {
     const draggablePiece = el.cloneNode(true /** clone children */) as HTMLDivElement
     draggablePiece.setAttribute('data-square', '')
     draggablePiece.setAttribute('id', 'draggablePiece')
-    draggablePiece.querySelector('[data-overlay="true"]')?.remove()
     draggablePiece.style.backgroundColor = 'transparent'
     draggablePiece.style.width = width + 'px'
     draggablePiece.style.height = height + 'px'
@@ -456,14 +460,17 @@ const chessts = (function chessTs() {
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', function handleMouseUp(e: MouseEvent) {
       const draggablePiece = document.getElementById('draggablePiece')
-
+      const { width, x, y } = globalState.boardEl.getBoundingClientRect()
+      const toSquare = posToSquare({ 
+        size: width,
+        rx: e.clientX - x, ry: e.clientY - y, flipped: globalState.flipped
+      })
       if (draggablePiece) {
         draggablePiece.remove()
         globalState.moving = false
+        onDragEnd?.(el.getAttribute('data-square') as Square)
       }
       if (onMove) {
-        const { width, x, y } = globalState.boardEl.getBoundingClientRect()
-        const toSquare = posToSquare({ size: width, rx: e.clientX - x, ry: e.clientY - y, flipped: globalState.flipped })
         const fromSquare = el.getAttribute('data-square')
         if (fromSquare && toSquare) {
           onMove(fromSquare as Square, toSquare)
@@ -480,6 +487,16 @@ const chessts = (function chessTs() {
     if (!draggablePiece) {
       return
     }
+    const { x, y, width } = globalState.boardEl.getBoundingClientRect()
+    const hoverSquare = posToSquare({ 
+      rx: e.clientX - x,
+      ry: e.clientY - y,
+      size: width,
+      flipped: globalState.flipped === true,
+    })
+    if (hoverSquare) {
+      globalState.onHover?.(hoverSquare)
+    } 
     draggablePiece.style.top = (e.pageY - (draggablePiece.clientHeight / 2)) + 'px'
     draggablePiece.style.left = (e.pageX - (draggablePiece.clientWidth / 2)) + 'px' 
   }
@@ -495,6 +512,7 @@ const chessts = (function chessTs() {
     unfreeze,
     state: globalState,
     posToSquare,
-    decorateSquare,
+    decorate,
+    removeDecoration,
   };
 })();
