@@ -20,6 +20,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "declaration": true,
+    "declarationDir": "dist"
   },
   "include": [
     "src/**/*.ts",

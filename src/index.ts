@@ -12,10 +12,10 @@ const chessts = (function chessTs() {
     flipped: boolean
     boardEl: HTMLElement
     player: Player | null
-    moving: boolean // make this a piece? 
+    moving: Square | null // make this a piece? 
     getAsset: ((p: Piece) => string) | null
     onMove: ((f: Square, t: Square) => void) | null
-    onHover: ((s: Square) => void) | null
+    onHover: ((f: Square, t: Square) => void) | null
     onDrag: {
       start: (s: Square) => void
       end: () => void
@@ -27,7 +27,7 @@ const chessts = (function chessTs() {
     flipped: false,
     boardEl: document.createElement('div'),
     player: 0,
-    moving: false,
+    moving: null,
     getAsset: null,
     onMove: null,
     onHover: null,
@@ -108,11 +108,12 @@ const chessts = (function chessTs() {
     for(const piece of globalState.pieces) {
       if (player === null) {
         piece.setAttribute('data-disabled', 'true')
-        return
+        continue
       }
       const pieceColor = toPlayer(piece.getAttribute('data-square')! as Piece)
       if (player === pieceColor) {
         piece.setAttribute('data-disabled', 'true')
+        continue
       }
       piece.setAttribute('data-disabled', '')
     }
@@ -121,12 +122,13 @@ const chessts = (function chessTs() {
   function unfreeze(player: Player | null) {
     for(const piece of globalState.pieces) {
       if (player === null) {
-        piece.setAttribute('data-disabled', '')
-        return
+        piece.setAttribute('data-disabled', 'false')
+        continue
       }
       const pieceColor = toPlayer(piece.getAttribute('data-square')! as Piece)
       if (player === pieceColor) {
-        piece.setAttribute('data-disabled', '')
+        piece.setAttribute('data-disabled', 'false')
+        continue
       }
       piece.setAttribute('data-disabled', 'true')
     }
@@ -174,7 +176,7 @@ const chessts = (function chessTs() {
     flipped?: boolean
     getAsset: (type: Piece) => string
     onMove?: (f: Square, t: Square) => void 
-    onHover?: (s: Square) => void
+    onHover?: (f: Square, t: Square) => void
     onDrag?: { start: (s: Square) => void, end: (s: Square) => void }
   }) {
 
@@ -423,13 +425,13 @@ const chessts = (function chessTs() {
     const imgUi = createDom('img', {
       width: '100%',
       cursor: disabled ? 'auto': 'pointer',
-    }, { draggable: false, src: getAsset(type)})
+    }, { draggable: false, src: getAsset(type) })
     containerUi.appendChild(imgUi)
     containerUi.addEventListener('mousedown', function handleMouseDown(e) {
       if (containerUi.getAttribute('data-disabled') === 'true') {
         return
       }
-      globalState.moving = true
+      globalState.moving = containerUi.getAttribute('data-square') as Square
       createDraggablePiece(e as MouseEvent, containerUi as HTMLDivElement, onMove, onDrag?.end)
       onDrag?.start(containerUi.getAttribute('data-square') as Square)
     })
@@ -467,7 +469,7 @@ const chessts = (function chessTs() {
       })
       if (draggablePiece) {
         draggablePiece.remove()
-        globalState.moving = false
+        globalState.moving = null
         onDragEnd?.(el.getAttribute('data-square') as Square)
       }
       if (onMove) {
@@ -484,7 +486,7 @@ const chessts = (function chessTs() {
 
   function handleMouseMove(e: MouseEvent) {
     const draggablePiece = document.getElementById('draggablePiece')
-    if (!draggablePiece) {
+    if (!draggablePiece || !globalState.moving) {
       return
     }
     const { x, y, width } = globalState.boardEl.getBoundingClientRect()
@@ -495,7 +497,7 @@ const chessts = (function chessTs() {
       flipped: globalState.flipped === true,
     })
     if (hoverSquare) {
-      globalState.onHover?.(hoverSquare)
+      globalState.onHover?.(globalState.moving, hoverSquare)
     } 
     draggablePiece.style.top = (e.pageY - (draggablePiece.clientHeight / 2)) + 'px'
     draggablePiece.style.left = (e.pageX - (draggablePiece.clientWidth / 2)) + 'px' 
