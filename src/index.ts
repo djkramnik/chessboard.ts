@@ -135,14 +135,15 @@ const chessts = (function chessTs() {
   }
 
   function decorate(s: Square, decoration: HTMLElement) {
-    if (document.getElementById('data-decoration_' + s)) {
-      return
-    }
+
     // square to position... put on board... 
-    const decorationParent = createDom('div', {
+    const decorationParent = 
+    document.getElementById('data-decoration_' + s) ??
+    createDom('div', {
       position: 'absolute',
       width: '12.5%',
       height: '12.5%',
+      display: 'flex',
       ...(squareToPos(s, globalState.flipped))
     }, {
       'id': 'data-decoration_' + s
@@ -151,7 +152,18 @@ const chessts = (function chessTs() {
     globalState.boardEl.appendChild(decorationParent)
   }
   function removeDecoration(s: Square) {
-    document.getElementById('data-decoration_' + s)?.remove()
+    const container = document.getElementById('data-decoration_' + s)
+    if (!container) {
+      return
+    }
+    container.innerHTML = ''
+  }
+  function removeOneDecoration(s: Square, selector: string) {
+    const container = document.getElementById('data-decoration_' + s)
+    if (!container) {
+      return
+    }
+    container.querySelector(selector)?.remove()
   }
 
   function findPiece(s: Square) {
@@ -516,5 +528,6 @@ const chessts = (function chessTs() {
     posToSquare,
     decorate,
     removeDecoration,
+    removeOneDecoration,
   };
 })();
