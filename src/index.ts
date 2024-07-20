@@ -171,7 +171,7 @@ const chessts = (function chessTs() {
   }
 
   /** DANGER.  REACT SUX.  DANGER */
-
+  let container: HTMLElement | null = null
   function initChessboard({
     el,
     background,
@@ -191,7 +191,11 @@ const chessts = (function chessTs() {
     onHover?: (f: Square, t: Square) => void
     onDrag?: { start: (s: Square) => void, end: (s: Square) => void }
   }) {
-
+    // prevent > 1 initialization
+    if (container === el) {
+      return
+    }
+    container = el
     globalState.boardEl = el
     globalState.flipped = flipped === true
     globalState.getAsset = getAsset
