@@ -58,6 +58,10 @@ const chessts = (function chessTs() {
     return animateQueue
   }
 
+  function removePiece(s: Square) {
+    findPiece(s)?.remove()
+  }
+
   function movePiece(from: Square, to: Square) {
     if (from === to) {
       return
@@ -525,6 +529,7 @@ const chessts = (function chessTs() {
     startingFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
     animatePiece,
     movePiece,
+    removePiece,
     placePiece,
     freeze,
     unfreeze,
