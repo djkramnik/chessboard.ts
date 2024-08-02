@@ -121,7 +121,7 @@ const chessts = (function chessTs() {
         piece.setAttribute('data-disabled', 'true')
         continue
       }
-      const pieceColor = toPlayer(piece.getAttribute('data-square')! as Piece)
+      const pieceColor = toPlayer(piece.getAttribute('data-piece-type')! as Piece)
       if (player === pieceColor) {
         piece.setAttribute('data-disabled', 'true')
         continue
@@ -136,7 +136,7 @@ const chessts = (function chessTs() {
         piece.setAttribute('data-disabled', 'false')
         continue
       }
-      const pieceColor = toPlayer(piece.getAttribute('data-square')! as Piece)
+      const pieceColor = toPlayer(piece.getAttribute('data-piece-type')! as Piece)
       if (player === pieceColor) {
         piece.setAttribute('data-disabled', 'false')
         continue
@@ -447,7 +447,8 @@ const chessts = (function chessTs() {
     }, { 
       draggable: false,
       'data-disabled': disabled,
-      'data-square': square
+      'data-square': square,
+      'data-piece-type': type,
     })
     const imgUi = createDom('img', {
       width: '100%',
