@@ -60,7 +60,12 @@ const chessts = (function chessTs() {
   }
 
   function removePiece(s: Square) {
-    findPiece(s)?.remove()
+    const piece = findPiece(s)
+    if (!piece) {
+      console.log('cannot find piece to remove??', globalState.pieces)
+      return
+    }
+    piece.remove()
   }
 
   function movePiece(from: Square, to: Square) {
