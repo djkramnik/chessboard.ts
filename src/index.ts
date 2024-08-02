@@ -47,10 +47,11 @@ const chessts = (function chessTs() {
         target.style.transition = '240ms transform'
         const [translateX, translateY] = translateSquares(from, to, globalState.flipped)
         target.style.transform = `translate(${translateX}%,${translateY}%)`
-        target.addEventListener('transitionend', () => {
+        target.addEventListener('transitionend', function onTransitionEnd() {
           target.style.transition = 'initial'
           target.style.transform = 'initial'
           movePiece(from, to)
+          target.removeEventListener('transitionend', onTransitionEnd)
           resolve()
         })
       })
