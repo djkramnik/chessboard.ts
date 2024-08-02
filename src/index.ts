@@ -62,9 +62,10 @@ const chessts = (function chessTs() {
   function removePiece(s: Square) {
     const piece = findPiece(s)
     if (!piece) {
-      console.log('cannot find piece to remove??', globalState.pieces)
+      console.log('cannot find piece to remove?')
       return
     }
+    globalState.pieces.splice(globalState.pieces.findIndex(function (el) { return el === piece; }), 1);
     piece.remove()
   }
 
