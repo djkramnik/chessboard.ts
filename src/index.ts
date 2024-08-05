@@ -21,6 +21,7 @@ const chessts = (function chessTs() {
       start: (s: Square) => void
       end: (f: Square, t: Square | null) => void
     } | null
+    onClick: ((s: Square) => void) | null
   }
   
   let globalState: UiState = {
@@ -34,6 +35,7 @@ const chessts = (function chessTs() {
     selectPiece: null,
     onHover: null,
     onDrag: null,
+    onClick: null,
   }
 
   let animateQueue: Promise<void> = Promise.resolve() // orders to animate something on the board get attached to this promise
@@ -147,7 +149,7 @@ const chessts = (function chessTs() {
     }
   }
 
-  function decorate(s: Square, decoration: HTMLElement) {
+  function decorate(s: Square, decoration: HTMLElement, withPointer: boolean) {
 
     // square to position... put on board... 
     const decorationParent = 
@@ -157,7 +159,13 @@ const chessts = (function chessTs() {
       width: '12.5%',
       height: '12.5%',
       display: 'flex',
-      ...(squareToPos(s, globalState.flipped))
+      ...(squareToPos(s, globalState.flipped)),
+      ...(withPointer
+        ? {
+          cursor: 'pointer'
+        }
+        : {}
+      )
     }, {
       'id': 'data-decoration_' + s
     })
@@ -195,6 +203,7 @@ const chessts = (function chessTs() {
     selectPiece,
     onHover,
     onDrag,
+    onClick,
   }: {
     el: HTMLElement
     background: string
@@ -205,6 +214,7 @@ const chessts = (function chessTs() {
     selectPiece?: (s: Square) => void
     onHover?: (f: Square, t: Square) => void
     onDrag?: { start: (s: Square) => void, end: (s: Square, t: Square | null) => void }
+    onClick?: (s: Square) => void
   }) {
     // prevent > 1 initialization
     if (container === el) {
@@ -218,6 +228,7 @@ const chessts = (function chessTs() {
     globalState.onHover = onHover ?? null
     globalState.selectPiece = selectPiece ?? null
     globalState.onDrag = onDrag ?? null
+    globalState.onClick = onClick ?? null
     el.style.background = `url(${background})`
     el.style.position = 'relative'
 
@@ -237,6 +248,20 @@ const chessts = (function chessTs() {
       globalState.pieces.push(pieceUi)
       el.appendChild(pieceUi)
     }
+    container.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement
+      if (target.hasAttribute('data-square')) {
+        return
+      }
+      const { width, x, y } = globalState.boardEl.getBoundingClientRect()
+      const square = posToSquare({ 
+        size: width,
+        rx: e.clientX - x, ry: e.clientY - y, flipped: globalState.flipped
+      })
+      if (square) {
+        globalState.onClick?.(square)
+      }
+    })
   }
 
   /**
