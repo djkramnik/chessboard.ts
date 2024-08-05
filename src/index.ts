@@ -15,10 +15,11 @@ const chessts = (function chessTs() {
     moving: Square | null // make this a piece? 
     getAsset: ((p: Piece) => string) | null
     onMove: ((f: Square, t: Square) => void) | null
+    selectPiece: ((s: Square) => void) | null
     onHover: ((f: Square, t: Square) => void) | null
     onDrag: {
       start: (s: Square) => void
-      end: () => void
+      end: (f: Square, t: Square | null) => void
     } | null
   }
   
@@ -30,6 +31,7 @@ const chessts = (function chessTs() {
     moving: null,
     getAsset: null,
     onMove: null,
+    selectPiece: null,
     onHover: null,
     onDrag: null,
   }
@@ -190,6 +192,7 @@ const chessts = (function chessTs() {
     getAsset,
     flipped,
     onMove = movePiece,
+    selectPiece,
     onHover,
     onDrag,
   }: {
@@ -198,9 +201,10 @@ const chessts = (function chessTs() {
     state: GameState
     flipped?: boolean
     getAsset: (type: Piece) => string
-    onMove?: (f: Square, t: Square) => void 
+    onMove?: (f: Square, t: Square) => void
+    selectPiece?: (s: Square) => void
     onHover?: (f: Square, t: Square) => void
-    onDrag?: { start: (s: Square) => void, end: (s: Square) => void }
+    onDrag?: { start: (s: Square) => void, end: (s: Square, t: Square | null) => void }
   }) {
     // prevent > 1 initialization
     if (container === el) {
@@ -212,7 +216,8 @@ const chessts = (function chessTs() {
     globalState.getAsset = getAsset
     globalState.onMove = onMove
     globalState.onHover = onHover ?? null
-    
+    globalState.selectPiece = selectPiece ?? null
+    globalState.onDrag = onDrag ?? null
     el.style.background = `url(${background})`
     el.style.position = 'relative'
 
@@ -227,7 +232,7 @@ const chessts = (function chessTs() {
           ? toPlayer(piece) !== state.player
           : false,
         onMove,
-        onDrag,
+        selectPiece,
       })
       globalState.pieces.push(pieceUi)
       el.appendChild(pieceUi)
@@ -423,6 +428,7 @@ const chessts = (function chessTs() {
     disabled?: boolean
     getAsset: (type: Piece) => string
     onMove?: (f: Square, t: Square) => void
+    selectPiece?: (s: Square) => void
     onDrag?: {
       start: (s: Square) => void,
       end: (s: Square) => void,
@@ -436,7 +442,7 @@ const chessts = (function chessTs() {
     disabled,
     getAsset,
     onMove,
-    onDrag,
+    selectPiece,
   }: PieceProps) {
     const containerUi = createDom('div', {
       position: 'absolute',
@@ -460,8 +466,8 @@ const chessts = (function chessTs() {
         return
       }
       globalState.moving = containerUi.getAttribute('data-square') as Square
-      createDraggablePiece(e as MouseEvent, containerUi as HTMLDivElement, onMove, onDrag?.end)
-      onDrag?.start(containerUi.getAttribute('data-square') as Square)
+      createDraggablePiece(e as MouseEvent, containerUi as HTMLDivElement, onMove, globalState.onDrag?.end, selectPiece)
+      globalState.onDrag?.start(containerUi.getAttribute('data-square') as Square)
     })
     return containerUi
   }
@@ -470,7 +476,8 @@ const chessts = (function chessTs() {
     e: MouseEvent,
     el: HTMLDivElement,
     onMove?: (f: Square, t: Square) => void,
-    onDragEnd?: (s: Square) => void,
+    onDragEnd?: (f: Square, t: Square | null) => void,
+    selectPiece?: (s: Square) => void,
   ) {
     if (document.getElementById('draggablePiece') !== null) {
       return
@@ -498,12 +505,24 @@ const chessts = (function chessTs() {
       if (draggablePiece) {
         draggablePiece.remove()
         globalState.moving = null
-        onDragEnd?.(el.getAttribute('data-square') as Square)
+        onDragEnd?.(el.getAttribute('data-square') as Square, toSquare)
       }
       if (onMove) {
         const fromSquare = el.getAttribute('data-square')
+
         if (fromSquare && toSquare) {
-          onMove(fromSquare as Square, toSquare)
+          if (fromSquare !== toSquare) {
+            onMove(fromSquare as Square, toSquare)
+          }
+        }
+      }
+      if (selectPiece) {
+        const fromSquare = el.getAttribute('data-square')
+
+        if (fromSquare && toSquare) {
+          if (fromSquare === toSquare) {
+            selectPiece(fromSquare as Square)
+          }
         }
       }
       el.style.opacity = 'initial'
