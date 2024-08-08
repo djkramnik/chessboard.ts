@@ -169,9 +169,15 @@ const chessts = (function chessTs() {
     }, {
       'id': 'data-decoration_' + s
     })
+    decorationParent.classList.add('chessboard_decoration')
     decorationParent.appendChild(decoration)
     globalState.boardEl.appendChild(decorationParent)
   }
+
+  function removeAllDecorations() {
+    globalState.boardEl.querySelectorAll('.chessboard_decoration').forEach(el => el.remove())
+  }
+
   function removeDecoration(s: Square) {
     const container = document.getElementById('data-decoration_' + s)
     if (!container) {
@@ -630,5 +636,6 @@ const chessts = (function chessTs() {
     decorate,
     removeDecoration,
     removeOneDecoration,
+    removeAllDecorations,
   };
 })();
