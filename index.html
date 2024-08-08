@@ -9,10 +9,14 @@
     </style>
   </head>
   <body>
+    <button id="test-btn">reset</button>
     <div id="chessboard">
     </div>
+
     <script type="text/javascript" src="dist/index.js"></script>
     <script type="text/javascript">
+      const testBtn = document.getElementById('test-btn')
+      
       const blueSquare = document.createElement('div')
       blueSquare.style.position = 'absolute'
       blueSquare.style.top = 0
@@ -21,7 +25,20 @@
       blueSquare.style.height = '100%'
       blueSquare.style.backgroundColor = 'blue'
 
-      const { initChessboard, fenToState, startingFen, animatePiece, decorate } = chessts
+      const { 
+        initChessboard,
+        fenToState,
+        startingFen,
+        animatePiece,
+        decorate,
+        resetChessboard
+      } = chessts
+
+      testBtn.addEventListener('click', () => {
+        resetChessboard({
+          state: fenToState(startingFen),
+        })
+      })
       initChessboard({
         el: document.getElementById('chessboard'),
         background: 'assets/brown.svg',

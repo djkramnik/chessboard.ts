@@ -13,7 +13,7 @@ const chessts = (function chessTs() {
     boardEl: HTMLElement
     player: Player | null
     moving: Square | null // make this a piece? 
-    getAsset: ((p: Piece) => string) | null
+    getAsset: ((p: Piece) => string)
     onMove: ((f: Square, t: Square) => void) | null
     selectPiece: ((s: Square) => void) | null
     onHover: ((f: Square, t: Square) => void) | null
@@ -30,7 +30,7 @@ const chessts = (function chessTs() {
     boardEl: document.createElement('div'),
     player: 0,
     moving: null,
-    getAsset: null,
+    getAsset: () => 'placeholder',
     onMove: null,
     selectPiece: null,
     onHover: null,
@@ -193,6 +193,45 @@ const chessts = (function chessTs() {
 
   /** DANGER.  REACT SUX.  DANGER */
   let container: HTMLElement | null = null
+
+  // reset the board after the initialization
+  function resetChessboard({
+    state,
+    flipped,
+  }: {
+    state: GameState
+    flipped?: boolean
+  }) {
+
+    // should not happen (reset during user dragging a piece) but just in case..
+    globalState.moving = null
+    document.getElementById('draggablePiece')?.remove()
+
+    // remove existing pieces off the board
+    globalState.pieces.forEach(p => {
+      p.remove()
+    })
+    globalState.pieces = []
+
+    globalState.flipped = flipped === true
+    const pieces = Object.entries(state.position)
+    for(const [square, piece] of pieces) {
+      const pieceUi = initPiece({
+        type: piece,
+        square: square as Square,
+        flipped,
+        getAsset: globalState.getAsset,
+        disabled: state.player !== null
+          ? toPlayer(piece) !== state.player
+          : false,
+        onMove: globalState.onMove ?? undefined,
+        selectPiece: globalState.selectPiece ?? undefined,
+      })
+      globalState.pieces.push(pieceUi)
+      globalState.boardEl.appendChild(pieceUi)
+    }
+  }
+
   function initChessboard({
     el,
     background,
@@ -577,6 +616,7 @@ const chessts = (function chessTs() {
 
   return {
     initChessboard,
+    resetChessboard,
     fenToState,
     startingFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
     animatePiece,
