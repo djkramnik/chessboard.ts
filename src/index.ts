@@ -46,6 +46,7 @@ const chessts = (function chessTs() {
         const target = findPiece(from)
         if (!target) {
           console.warn('Cannot find piece on', from)
+          resolve()
           return
         }
         target.style.transition = '240ms transform'
@@ -565,6 +566,7 @@ const chessts = (function chessTs() {
     el.style.opacity = '0.5'
     // create a window event handler for mouse move
     window.addEventListener('mousemove', handleMouseMove)
+
     window.addEventListener('mouseup', function handleMouseUp(e: MouseEvent) {
       const draggablePiece = document.getElementById('draggablePiece')
       const { width, x, y } = globalState.boardEl.getBoundingClientRect()
