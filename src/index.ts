@@ -561,6 +561,7 @@ const chessts = (function chessTs() {
     draggablePiece.style.width = width + 'px'
     draggablePiece.style.height = height + 'px'
     draggablePiece.style.pointerEvents = 'none'
+    draggablePiece.style.userSelect = 'none';
     document.body.appendChild(draggablePiece)
     handleMouseMove(e)
     el.style.opacity = '0.5'
